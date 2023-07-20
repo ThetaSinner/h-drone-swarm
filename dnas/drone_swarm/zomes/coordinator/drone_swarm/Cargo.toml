@@ -1,0 +1,15 @@
+[package]
+name = "drone_swarm"
+version = "0.0.1"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "drone_swarm"
+
+[dependencies]
+hdk = { workspace = true }
+
+serde = { workspace = true }
+
+drone_swarm_integrity = { workspace = true } 

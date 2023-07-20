@@ -1,0 +1,19 @@
+---
+manifest_version: "1"
+name: drone_swarm
+integrity:
+  network_seed: ~
+  properties: ~
+  origin_time: 1689880697841746
+  zomes:
+    - name: drone_swarm_integrity
+      hash: ~
+      bundled: "../../../target/wasm32-unknown-unknown/release/drone_swarm_integrity.wasm"
+      dependencies: ~
+coordinator:
+  zomes:
+    - name: drone_swarm
+      hash: ~
+      bundled: "../../../target/wasm32-unknown-unknown/release/drone_swarm.wasm"
+      dependencies:
+        - name: drone_swarm_integrity

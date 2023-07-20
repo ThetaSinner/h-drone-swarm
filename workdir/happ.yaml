@@ -2,4 +2,18 @@
 manifest_version: "1"
 name: drone-swarm
 description: ~
-roles: []
+roles:
+  - name: drone_swarm
+    provisioning:
+      strategy: create
+      deferred: false
+    dna:
+      bundled: "../dnas/drone_swarm/workdir/drone_swarm.dna"
+      modifiers:
+        network_seed: ~
+        properties: ~
+        origin_time: ~
+        quantum_time: ~
+      installed_hash: ~
+      _version: ~
+      clone_limit: 0
