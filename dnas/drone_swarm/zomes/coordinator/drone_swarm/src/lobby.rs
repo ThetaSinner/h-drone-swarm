@@ -1,14 +1,11 @@
-use hdk::prelude::*;
 use drone_swarm_integrity::*;
+use hdk::prelude::*;
 #[hdk_extern]
 pub fn create_lobby(lobby: Lobby) -> ExternResult<Record> {
     let lobby_hash = create_entry(&EntryTypes::Lobby(lobby.clone()))?;
-    let record = get(lobby_hash.clone(), GetOptions::default())?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest(String::from("Could not find the newly created Lobby"))
-            ),
-        )?;
+    let record = get(lobby_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(
+        WasmErrorInner::Guest(String::from("Could not find the newly created Lobby"))
+    ))?;
     Ok(record)
 }
 #[hdk_extern]
@@ -19,9 +16,9 @@ fn get_latest_lobby(lobby_hash: ActionHash) -> ExternResult<Option<Record>> {
     let details = get_details(lobby_hash, GetOptions::default())?
         .ok_or(wasm_error!(WasmErrorInner::Guest("Lobby not found".into())))?;
     let record_details = match details {
-        Details::Entry(_) => {
-            Err(wasm_error!(WasmErrorInner::Guest("Malformed details".into())))
-        }
+        Details::Entry(_) => Err(wasm_error!(WasmErrorInner::Guest(
+            "Malformed details".into()
+        ))),
         Details::Record(record_details) => Ok(record_details),
     }?;
     if record_details.deletes.len() > 0 {
@@ -39,16 +36,10 @@ pub struct UpdateLobbyInput {
 }
 #[hdk_extern]
 pub fn update_lobby(input: UpdateLobbyInput) -> ExternResult<Record> {
-    let updated_lobby_hash = update_entry(
-        input.previous_lobby_hash,
-        &input.updated_lobby,
-    )?;
-    let record = get(updated_lobby_hash.clone(), GetOptions::default())?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest(String::from("Could not find the newly updated Lobby"))
-            ),
-        )?;
+    let updated_lobby_hash = update_entry(input.previous_lobby_hash, &input.updated_lobby)?;
+    let record = get(updated_lobby_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(
+        WasmErrorInner::Guest(String::from("Could not find the newly updated Lobby"))
+    ))?;
     Ok(record)
 }
 #[hdk_extern]
