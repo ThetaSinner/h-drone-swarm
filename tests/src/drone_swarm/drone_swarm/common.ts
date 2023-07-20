@@ -6,7 +6,7 @@ import { NewEntryAction, ActionHash, Record, AppBundleSource, fakeActionHash, fa
 export async function sampleLobby(cell: CallableCell, partialLobby = {}) {
     return {
         ...{
-	  host: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  name: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
 	  join_deadline: 1674053334548000,
 	  host: (await fakeAgentPubKey()),
         },
@@ -21,4 +21,3 @@ export async function createLobby(cell: CallableCell, lobby = undefined): Promis
       payload: lobby || await sampleLobby(cell),
     });
 }
-
