@@ -1,17 +1,61 @@
 use drone_swarm_integrity::*;
-use hdk::prelude::*;
+use hdk::prelude::{*, holo_hash::AnyLinkableHashPrimitive, tracing::log::warn};
+
 #[hdk_extern]
 pub fn create_lobby(lobby: Lobby) -> ExternResult<Record> {
-    let lobby_hash = create_entry(&EntryTypes::Lobby(lobby.clone()))?;
+    let lobby_advertise_windows = get_lobby_advertise_windows()?
+        .into_iter()
+        .map(|w| hash_entry(&LobbyWindow::from(w)))
+        .collect::<ExternResult<Vec<EntryHash>>>()?;
+
+    let lobby_hash = create_entry(&EntryTypes::Lobby(lobby))?;
     let record = get(lobby_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(
         WasmErrorInner::Guest(String::from("Could not find the newly created Lobby"))
     ))?;
+
+    for lobby_window_hash in lobby_advertise_windows {
+        create_link(
+            lobby_window_hash,
+            lobby_hash.clone(),
+            LobbyLinkTypes::LobbyWindowToLobby,
+            (),
+        )?;
+    }
+
     Ok(record)
 }
+
+#[hdk_extern]
+pub fn get_current_lobbies(_: ()) -> ExternResult<Vec<Record>> {
+    let lobby_advertise_windows = get_lobby_advertise_windows()?
+        .into_iter()
+        .map(|w| hash_entry(LobbyWindow::from(w)))
+        .collect::<ExternResult<Vec<EntryHash>>>()?;
+
+    let links = lobby_advertise_windows
+        .into_iter()
+        .map(|base| get_links(base, LobbyLinkTypes::LobbyWindowToLobby, None))
+        .collect::<ExternResult<Vec<Vec<Link>>>>()?;
+
+    Ok(links.into_iter().flatten().map(|link| {
+        // TODO `into_any_dht_hash` not available until a later version of the hdk
+        match link.target.into_primitive() {
+            AnyLinkableHashPrimitive::Entry(entry_hash) => {
+                get(entry_hash, GetOptions::default())
+            }
+            _ => {
+                warn!("Lobby link target is not an EntryHash");
+                Ok(None)
+            }
+        }
+    }).collect::<ExternResult<Vec<Option<Record>>>>()?.into_iter().filter_map(|v| v).collect())
+}
+
 #[hdk_extern]
 pub fn get_lobby(original_lobby_hash: ActionHash) -> ExternResult<Option<Record>> {
     get_latest_lobby(original_lobby_hash)
 }
+
 fn get_latest_lobby(lobby_hash: ActionHash) -> ExternResult<Option<Record>> {
     let details = get_details(lobby_hash, GetOptions::default())?
         .ok_or(wasm_error!(WasmErrorInner::Guest("Lobby not found".into())))?;
@@ -29,11 +73,13 @@ fn get_latest_lobby(lobby_hash: ActionHash) -> ExternResult<Option<Record>> {
         None => Ok(Some(record_details.record)),
     }
 }
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateLobbyInput {
     pub previous_lobby_hash: ActionHash,
     pub updated_lobby: Lobby,
 }
+
 #[hdk_extern]
 pub fn update_lobby(input: UpdateLobbyInput) -> ExternResult<Record> {
     let updated_lobby_hash = update_entry(input.previous_lobby_hash, &input.updated_lobby)?;
@@ -42,7 +88,30 @@ pub fn update_lobby(input: UpdateLobbyInput) -> ExternResult<Record> {
     ))?;
     Ok(record)
 }
+
 #[hdk_extern]
 pub fn delete_lobby(original_lobby_hash: ActionHash) -> ExternResult<ActionHash> {
     delete_entry(original_lobby_hash)
+}
+
+const WINDOW_SIZE_SECONDS: i64 = 60 * 60; // 1 hour
+const WINDOW_OVERLAP_SECONDS: i64 = 10 * 60; // 10 minutes
+
+fn get_lobby_advertise_windows() -> ExternResult<Vec<i64>> {
+    let timestamp = sys_time()?;
+    let current_seconds = timestamp.as_seconds_and_nanos().0;
+
+    let current_offset = current_seconds % WINDOW_SIZE_SECONDS;
+
+    let window_mid = current_seconds - current_offset + WINDOW_SIZE_SECONDS / 2;
+
+    if current_offset < WINDOW_OVERLAP_SECONDS {
+        let previous_window_mid = window_mid - WINDOW_SIZE_SECONDS;
+        Ok(vec![previous_window_mid, window_mid])
+    } else if current_offset > WINDOW_SIZE_SECONDS - WINDOW_OVERLAP_SECONDS {
+        let next_window_mid = window_mid + WINDOW_SIZE_SECONDS;
+        Ok(vec![window_mid, next_window_mid])
+    } else {
+        Ok(vec![window_mid])
+    }
 }
