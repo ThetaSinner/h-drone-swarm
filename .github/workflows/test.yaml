@@ -1,0 +1,29 @@
+name: "test"
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  push: 
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  testbuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install nix
+        uses: cachix/install-nix-action@v22
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.16.1/install
+          extra_nix_config: |
+            experimental-features = flakes nix-command
+
+      - uses: cachix/cachix-action@v12
+        with:
+          name: holochain-ci
+
+      - name: Install and test
+        run: |
+          nix develop --command bash -c "npm i && npm t"
+
