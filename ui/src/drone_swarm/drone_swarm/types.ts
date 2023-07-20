@@ -35,4 +35,16 @@ export type DroneSwarmSignal = {
   link_type: string;
 };
 
-export type EntryTypes = {};
+export type EntryTypes =
+ | ({  type: 'Lobby'; } & Lobby);
+
+
+
+export interface Lobby { 
+  host: string;
+
+  join_deadline: number;
+
+  host: AgentPubKey;
+}
+
