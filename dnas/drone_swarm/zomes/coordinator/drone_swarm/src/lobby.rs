@@ -3,6 +3,8 @@ use hdk::prelude::{*, holo_hash::AnyLinkableHashPrimitive, tracing::log::warn};
 
 #[hdk_extern]
 pub fn create_lobby(lobby: Lobby) -> ExternResult<Record> {
+    info!("Creating lobby: {:?}", lobby);
+
     let lobby_advertise_windows = get_lobby_advertise_windows()?
         .into_iter()
         .map(|w| hash_entry(&LobbyWindow::from(w)))
@@ -22,29 +24,40 @@ pub fn create_lobby(lobby: Lobby) -> ExternResult<Record> {
         )?;
     }
 
+    info!("Created lobby: {:?}", record);
+
     Ok(record)
 }
 
 #[hdk_extern]
 pub fn get_current_lobbies(_: ()) -> ExternResult<Vec<Record>> {
+    info!("Getting current lobbies");
+
     let lobby_advertise_windows = get_lobby_advertise_windows()?
         .into_iter()
         .map(|w| hash_entry(LobbyWindow::from(w)))
         .collect::<ExternResult<Vec<EntryHash>>>()?;
+
+    info!("Found lobby advertise windows: {:?}", lobby_advertise_windows);
 
     let links = lobby_advertise_windows
         .into_iter()
         .map(|base| get_links(base, LobbyLinkTypes::LobbyWindowToLobby, None))
         .collect::<ExternResult<Vec<Vec<Link>>>>()?;
 
+    info!("Found lobby links: {:?}", links);
+
     Ok(links.into_iter().flatten().map(|link| {
+        info!("Processing link {:?}", link);
+
         // TODO `into_any_dht_hash` not available until a later version of the hdk
         match link.target.into_primitive() {
-            AnyLinkableHashPrimitive::Entry(entry_hash) => {
-                get(entry_hash, GetOptions::default())
+            AnyLinkableHashPrimitive::Action(action_hash) => {
+                info!("Getting lobby action: {:?}", action_hash);
+                get(action_hash, GetOptions::default())
             }
             _ => {
-                warn!("Lobby link target is not an EntryHash");
+                warn!("Lobby link target is not an ActionHash");
                 Ok(None)
             }
         }
