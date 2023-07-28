@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { getCurrentLobbies, type Lobby } from '@/client';
+import { getCurrentLobbies, SignalBus, type Lobby } from '@/client';
 import type { AppAgentClient } from '@holochain/client';
-import { computed, inject, ref, type ComputedRef, type Ref, onMounted } from 'vue';
+import { computed, inject, ref, type ComputedRef, type Ref, onMounted, toRaw } from 'vue';
 import type { Record } from '@holochain/client';
 
 const providedClient = inject<Ref<AppAgentClient>>('client');
+const providedSignalBus = inject<Ref<SignalBus>>('signalBus');
 
 const newLobbyName = ref('');
 
@@ -17,6 +18,19 @@ onMounted(async () => {
       console.log('no client yet');
       return;
     }
+
+    // console.log('attach to client');
+    // client.on('signal', (s) => {
+    //   console.log('client signal', s);
+    // });
+
+    // console.log('attach to client: succeeded');
+
+    setTimeout(() => {
+      providedSignalBus?.value?.subscribeNewLobbies((signal) => {
+      console.log('lobby_created', signal);
+    });
+    }, 3000);
 
     try {
       const records = await getCurrentLobbies(client)
