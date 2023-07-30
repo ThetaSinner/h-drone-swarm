@@ -1,61 +1,33 @@
 <script setup lang="ts">
-import { getCurrentLobbies, SignalBus, type Lobby } from '@/client';
+import { DSClient, type Lobby } from '@/client';
+import { State } from "@/stores";
 import type { AppAgentClient } from '@holochain/client';
 import { computed, inject, ref, type ComputedRef, type Ref, onMounted, toRaw } from 'vue';
 import type { Record } from '@holochain/client';
+import { useLobbiesStore } from '@/stores';
 
-const providedClient = inject<Ref<AppAgentClient>>('client');
-const providedSignalBus = inject<Ref<SignalBus>>('signalBus');
+const providedClient = inject<DSClient>('dsClient');
+
+const lobbiesStore = useLobbiesStore();
 
 const newLobbyName = ref('');
 
-const lobbies = ref<Lobby[]>([])
-
-onMounted(async () => {
-  setTimeout(async () => {
-    let client = providedClient?.value;
-    if (!client) {
-      console.log('no client yet');
-      return;
-    }
-
-    // console.log('attach to client');
-    // client.on('signal', (s) => {
-    //   console.log('client signal', s);
-    // });
-
-    // console.log('attach to client: succeeded');
-
-    setTimeout(() => {
-      providedSignalBus?.value?.subscribeNewLobbies((signal) => {
-      console.log('lobby_created', signal);
-    });
-    }, 3000);
-
-    try {
-      const records = await getCurrentLobbies(client)
-      lobbies.value = records;
-    } catch (e) {
-      console.error('Error getting current lobbies', e);
-      return []
-    }
-  }, 300);
-})
-
 const createLobby = async () => {
-  let client = providedClient?.value;
-  if (!client) {
+  await providedClient?.waitForConnected();
+
+  const innerClient = providedClient?.innerClient;
+  if (!innerClient) {
     return;
   }
 
   const lobby: Lobby = {
     name: newLobbyName.value,
     join_deadline: 5 * 60, // 5 minutes
-    host: client.myPubKey,
+    host: innerClient.myPubKey,
   };
 
   try {
-    const record: Record = await client.callZome({
+    const record: Record = await innerClient.callZome({
       cap_secret: null,
       role_name: 'drone_swarm',
       zome_name: 'drone_swarm',
@@ -82,9 +54,14 @@ const createLobby = async () => {
       <button type="button" @click="createLobby">Create</button>
     </form>
 
-    <p>Found {{ lobbies.length }}</p>
-    <ul v-for="lobby in lobbies" :key="lobby.name">
-      <li>{{ lobby.name }}</li>
-    </ul>
+    <div v-if="lobbiesStore.currentState !== State.Streaming">
+      <p>Finding lobbies...</p>
+    </div>
+    <div v-else>
+      <p>Found {{ lobbiesStore.lobbies.length }}</p>
+      <ul v-for="lobby in lobbiesStore.lobbies" :key="lobby.name">
+        <li>{{ lobby.name }}</li>
+      </ul>
+    </div>
   </main>
 </template>
