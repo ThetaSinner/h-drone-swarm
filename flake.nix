@@ -4,9 +4,14 @@
   inputs = {
     nixpkgs.follows = "holochain/nixpkgs";
 
+    versions.url = "github:holochain/holochain?dir=versions/0_1";
+
+    versions.inputs.holochain.url = "github:holochain/holochain/holochain-0.1.6";
+    versions.inputs.lair.url = "github:holochain/lair/lair_keystore-v0.3.0";
+
     holochain = {
       url = "github:holochain/holochain";
-      inputs.versions.url = "github:holochain/holochain?dir=versions/0_1";
+      inputs.versions.follows = "versions";
     };
   };
 
