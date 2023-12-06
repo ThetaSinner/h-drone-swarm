@@ -7,7 +7,7 @@ import { SignalBus } from './signal';
 export * from './types';
 export * from './signal';
 
-export const connectClient = async (): Promise<AppAgentClient> => AppAgentWebsocket.connect('', 'drone-swarm')
+export const connectClient = async (): Promise<AppAgentClient> => AppAgentWebsocket.connect('' as unknown as URL, 'drone-swarm')
 
 export class DSClient {
     private client: AppAgentClient | null = null;

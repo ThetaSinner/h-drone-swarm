@@ -1,5 +1,5 @@
 use drone_swarm_integrity::*;
-use hdk::prelude::{*, holo_hash::AnyLinkableHashPrimitive, tracing::log::warn};
+use hdk::prelude::{*, holo_hash::AnyLinkableHashPrimitive, tracing::warn};
 
 #[hdk_extern]
 pub fn create_lobby(lobby: Lobby) -> ExternResult<Record> {
@@ -42,7 +42,7 @@ pub fn get_current_lobbies(_: ()) -> ExternResult<Vec<Record>> {
 
     let links = lobby_advertise_windows
         .into_iter()
-        .map(|base| get_links(base, LobbyLinkTypes::LobbyWindowToLobby, None))
+        .map(|base| get_links(GetLinksInputBuilder::try_new(base, LobbyLinkTypes::LobbyWindowToLobby)?.build()))
         .collect::<ExternResult<Vec<Vec<Link>>>>()?;
 
     info!("Found lobby links: {:?}", links);

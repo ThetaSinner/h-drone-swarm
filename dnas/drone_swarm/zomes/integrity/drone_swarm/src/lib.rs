@@ -53,7 +53,7 @@ pub fn validate_agent_joining(
 //
 // You can read more about validation here: https://docs.rs/hdi/latest/hdi/index.html#data-validation
 #[hdk_extern]
-pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
+pub fn validate(_op: Op) -> ExternResult<ValidateCallbackResult> {
     // match op.flattened::<EntryTypes, ()>()? {
     //     FlatOp::StoreEntry(store_entry) => match store_entry {
     //         OpEntry::CreateEntry { app_entry, action } => match app_entry {

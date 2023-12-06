@@ -4,9 +4,9 @@
   inputs = {
     nixpkgs.follows = "holochain/nixpkgs";
 
-    versions.url = "github:holochain/holochain?dir=versions/0_1";
+    versions.url = "github:holochain/holochain?dir=versions/weekly";
 
-    versions.inputs.holochain.url = "github:holochain/holochain/holochain-0.1.6";
+    versions.inputs.holochain.url = "github:holochain/holochain/holochain-0.3.0-beta-dev.26";
     versions.inputs.lair.url = "github:holochain/lair/lair_keystore-v0.3.0";
 
     holochain = {
